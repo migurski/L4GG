@@ -1,0 +1,1 @@
+exclude: ["configure-gateway.py", "sheets_post.py"]
