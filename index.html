@@ -8,11 +8,37 @@
 	</head>
 	<body>
 		<form action="https://xuvejzx9ni.execute-api.us-east-1.amazonaws.com/production/form" method="POST">
-		    <input type="text" name="name" placeholder="Your name">
+		    <input type="text" name="first_name" placeholder="First Name">
+		    <input type="text" name="last_name" placeholder="Last Name">
+		    <br>
+		    <input type="email" name="email" placeholder="Email Address">
+		    <br>
+		    <input type="text" name="county" placeholder="County">
 		    <select name="state">
 		        <option value="CA">California</option>
 		        <option value="NY">New York</option>
 		    </select>
+		    <br>
+		    <input type="text" name="home_zip" placeholder="Zip Code (Home)">
+		    <input type="text" name="work_zip" placeholder="Zip Code (Work)">
+		    <br>
+		    Status:
+		    <select name="practice_status">
+		        <option value="">(Choose One)</option>
+		        <option value="Licensed to practice in my state">Licensed to practice in my state</option>
+		        <option value="Licensed to practice in another state">Licensed to practice in another state</option>
+		        <option value="Licensed but inactive status">Licensed but inactive status</option>
+		        <option value="Law School graduate / not yet licensed">Law School graduate / not yet licensed</option>
+		        <option value="Law school student">Law school student</option>
+		        <option value="Retired (formerly practiced law)">retired (formerly practiced law)</option>
+		        <option value="Paralegal">Paralegal</option>
+		        <option value="Other">Other</option>
+		    </select>
+		    <br>
+		    Link to profile page, employer website, or other URL that can be used to confirm credentials:
+		    <br>
+		    <input type="text" name="link" placeholder="Link URL">
+		    <br>
 		    <input type="submit">
         </form>
     </body>
