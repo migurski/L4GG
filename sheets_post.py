@@ -10,17 +10,23 @@ def make_service(cred_data):
     creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_data, scopes)
     return discovery.build('sheets', 'v4', credentials=creds)
 
+def get_fields(service, sheet_id, sheet_name):
+    '''
+    '''
+    # Get column names for selected sheet
+    request = service.spreadsheets().values().get(spreadsheetId=sheet_id,
+        range="'{}'!A1:Z1".format(sheet_name))
+
+    fields = request.execute().get('values', [[]])[0]
+    return fields
+
 def post_form(service, sheet_id, formdata):
     '''
     '''
     # Sheets are named by U.S. state
     sheet_name = '{State} Responses'.format(**formdata)
 
-    # Get column names for selected sheet
-    request = service.spreadsheets().values().get(spreadsheetId=sheet_id,
-        range="'{}'!A1:Z1".format(sheet_name))
-
-    fields = request.execute().get('values', [[]])[0]
+    fields = ['Timestamp', 'Name'] # get_fields(service, sheet_id, sheet_name)
     values = [formdata.get(name, None) for name in fields]
     
     print('Fields:', json.dumps(fields))
