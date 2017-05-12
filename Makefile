@@ -1,5 +1,6 @@
 live: function.zip
 	aws lambda update-function-code --zip-file fileb://function.zip --function-name L4GG-Sheets-Post
+	python configure-gateway.py
 
 function.zip:
 	mkdir -pv function
