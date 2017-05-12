@@ -44,6 +44,7 @@ def lambda_handler(event, context):
     # retrieve credentials stored in environment vars
     creds = json.loads(os.environ['webform_serviceaccount'])
     sheet_id = os.environ['spreadsheet_id']
+    redirect_url = os.environ['redirect']
     service = make_service(creds)
     
     # Assemble form data
@@ -52,7 +53,8 @@ def lambda_handler(event, context):
     timestamp = str(datetime.datetime.utcnow())
     formdata = dict(Timestamp=timestamp, Name=name, State=state)
     
-    return post_form(service, sheet_id, formdata)
+    post_form(service, sheet_id, formdata)
+    return {'Location': redirect_url}
 
 def main(filename, sheet_id):
     with open(filename) as file:
