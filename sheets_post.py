@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os, sys, json, logging, datetime
 from apiclient import discovery
 from oauth2client.service_account import ServiceAccountCredentials

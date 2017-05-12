@@ -1,10 +1,22 @@
+#!/usr/bin/env python3
+''' Update AWS API Gateway configuration for L4GG API.
+
+Assumes that an "L4GG" API with a "/form" POST method and "production"
+deployment already exists; does not create all of this from scratch.
+Looks for an "L4GG-Sheets-Post" Lambda function to integrate.
+'''
 from pprint import pprint
 import boto3
 
+region = 'us-east-1'
 stage_name = 'production'
 
-lambda_arn = 'arn:aws:lambda:us-east-1:101696101272:function:L4GG-Sheets-Post'
-lambda_uri = 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/{}/invocations'.format(lambda_arn)
+lambda_name = 'L4GG-Sheets-Post'
+lambda_client = boto3.client('lambda')
+function_config = lambda_client.get_function_configuration(FunctionName=lambda_name)
+
+lambda_arn = function_config['FunctionArn']
+lambda_uri = 'arn:aws:apigateway:{}:lambda:path/2015-03-31/functions/{}/invocations'.format(region, lambda_arn)
 
 # See http://stackoverflow.com/questions/32057053/how-to-pass-a-params-from-post-to-aws-lambda-from-amazon-api-gateway
 body_mapping_template = '''{
@@ -66,7 +78,7 @@ client.put_integration_response(restApiId=rest_api_id, resourceId=resource_id, h
 client.create_deployment(restApiId=rest_api_id, stageName=stage_name)
 
 # See http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html
-rest_api_url = 'https://{}.execute-api.{}.amazonaws.com/{}/form'.format(rest_api_id, 'us-east-1', stage_name)
+rest_api_url = 'https://{}.execute-api.{}.amazonaws.com/{}/form'.format(rest_api_id, region, stage_name)
 print('URL:', rest_api_url)
 
 #method = client.get_method(restApiId=rest_api_id, resourceId=resource_id, httpMethod='POST')
