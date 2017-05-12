@@ -34,7 +34,9 @@ def post_form(service, sheet_id, formdata):
     
     # Post a new row to selected sheet
     request = service.spreadsheets().values().append(spreadsheetId=sheet_id,
-        range=sheet_name, body={'values': [values]}, valueInputOption='USER_ENTERED')
+        range=sheet_name, body={'values': [values]}, valueInputOption='USER_ENTERED',
+        # Rate-limiting: https://developers.google.com/sheets/api/query-parameters
+        quotaUser=True)
 
     range = request.execute().get('updates', {}).get('updatedRange')
     print('Range:', range)
