@@ -1,3 +1,10 @@
+''' Interact with Google sheets and AWS Simple Queue Service.
+
+New data is appended to Google sheets in post_form(). Normally, there are no
+side effects. If an append fails for any reason, it's written to a secondary
+queue where it is attemped later. Queued data is only deleted after being
+written successfully to Google sheets.
+'''
 import json, random, sys
 import unittest, unittest.mock
 import oauth2client.service_account
@@ -14,12 +21,14 @@ def make_service(cred_data):
     return apiclient.discovery.build('sheets', 'v4', credentials=creds)
 
 def pack_message_body(values, sheet_name, error):
-    '''
+    ''' Prepare a formatted message body for the secondary queue.
     '''
     return json.dumps(dict(values=values, sheet_name=sheet_name, error=error), indent=2, sort_keys=True)
 
 def post_form(service, sheet_id, sqs_url, error_chance, formdata):
-    '''
+    ''' Post form data to Google sheets.
+    
+        If something goes wrong, save the form data to the secondary queue.
     '''
     # Sheets are named by U.S. state
     sheet_name = '{State} Responses'.format(**formdata)
@@ -57,10 +66,12 @@ def post_form(service, sheet_id, sqs_url, error_chance, formdata):
     return 0
 
 def repost_form(service, sheet_id, sqs_url):
-    '''
+    ''' Look for saved form data in the secondary queue, and post it to Google sheets.
+    
+        If something goes wrong, try again after five minutes.
     '''
     client = boto3.client('sqs')
-    response = client.receive_message(QueueUrl=sqs_url, VisibilityTimeout=10)
+    response = client.receive_message(QueueUrl=sqs_url, VisibilityTimeout=300)
     messages = response.get('Messages', [])
     
     for message in messages:
@@ -89,6 +100,8 @@ def repost_form(service, sheet_id, sqs_url):
 class ServiceTest (unittest.TestCase):
     
     def test_make_service(self):
+        ''' Test Google service object construction from JSON credentials.
+        '''
         with unittest.mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict') as from_json_keyfile_dict, \
              unittest.mock.patch('apiclient.discovery.build') as discovery_build:
             service = make_service({'hello': 'world'})
@@ -100,6 +113,8 @@ class ServiceTest (unittest.TestCase):
         self.assertIs(service, discovery_build.return_value)
     
     def test_post_form_success(self):
+        ''' Test a normal, successful post to Google forms.
+        '''
         service = unittest.mock.Mock()
         append = service.spreadsheets.return_value.values.return_value.append
         append.return_value.execute.return_value = {'updates': {'updatedRange': 'X1'}}
@@ -121,6 +136,8 @@ class ServiceTest (unittest.TestCase):
         self.assertIn('Range: X1\n', output)
 
     def test_post_form_google_failure(self):
+        ''' Test that a failed post to Google forms writes to secondary queue.
+        '''
         def raises():
             raise RuntimeError('Inside job')
 
@@ -151,6 +168,8 @@ class ServiceTest (unittest.TestCase):
         self.assertIn('MESSAGE-ID\n', output)
 
     def test_post_form_random_failure(self):
+        ''' Test that a random failure also writes to secondary queue.
+        '''
         service = unittest.mock.Mock()
         sheet_id, sqs_url, error_chance = 'abc', 'http', 1
         formdata = {'State': 'CA', 'First': 'Lionel', 'Last': 'Hutz'}
@@ -173,6 +192,8 @@ class ServiceTest (unittest.TestCase):
         self.assertIn('MESSAGE-ID\n', output)
     
     def test_repost_form_success(self):
+        ''' Test that data from secondary queue can be written to Google forms.
+        '''
         service = unittest.mock.Mock()
         append = service.spreadsheets.return_value.values.return_value.append
         append.return_value.execute.return_value = {'updates': {'updatedRange': 'X1'}}
@@ -199,6 +220,8 @@ class ServiceTest (unittest.TestCase):
         boto_client.return_value.delete_message.assert_called_once_with(QueueUrl='http', ReceiptHandle='YO')
     
     def test_repost_form_failure(self):
+        ''' Test that failed data from secondary queue is not lost.
+        '''
         def raises():
             raise RuntimeError('Inside job')
 
