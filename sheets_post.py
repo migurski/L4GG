@@ -22,7 +22,8 @@ def lambda_handler(event, context):
     # retrieve credentials stored in environment vars
     creds = json.loads(os.environ['webform_serviceaccount'])
     sheet_id = os.environ['spreadsheet_id']
-    redirect_url = os.environ['redirect']
+    error_url = os.environ['error_url']
+    redirect_url = os.environ['redirect_url']
     sqs_url = os.environ['sqs_url']
     error_chance = float(os.environ['error_chance'])
     service = sheets_common.make_service(creds)
@@ -42,8 +43,13 @@ def lambda_handler(event, context):
         'Link': event_data.get('link'),
         }
     
-    sheets_common.post_form(service, sheet_id, sqs_url, error_chance, formdata)
-    return {'Location': redirect_url}
+    try:
+        sheets_common.post_form(service, sheet_id, sqs_url, error_chance, formdata)
+    except Exception as e:
+        print('Uncaught error:', e, file=sys.stdout)
+        return {'Location': error_url}
+    else:
+        return {'Location': redirect_url}
 
 def main(filename, sheet_id, sqs_url):
     with open(filename) as file:
