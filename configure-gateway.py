@@ -12,7 +12,7 @@ region = 'us-east-1'
 stage_name = 'production'
 
 lambda_name = 'L4GG-Sheets-Post'
-lambda_client = boto3.client('lambda')
+lambda_client = boto3.client('lambda', region_name=region)
 function_config = lambda_client.get_function_configuration(FunctionName=lambda_name)
 
 lambda_arn = function_config['FunctionArn']
@@ -38,7 +38,7 @@ body_mapping_template = '''{
 }
 '''
 
-client = boto3.client('apigateway')
+client = boto3.client('apigateway', region_name=region)
 
 rest_apis = client.get_rest_apis().get('items', [])
 rest_api_id = {api['name']: api['id'] for api in rest_apis}['L4GG']

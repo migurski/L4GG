@@ -1,8 +1,8 @@
 live: sheets_post.zip sheets_dequeue.zip
-	aws lambda update-function-code --zip-file fileb://sheets_post.zip --function-name L4GG-Sheets-Post
-	aws lambda update-function-configuration --function-name L4GG-Sheets-Post --handler sheets_post.lambda_handler
-	aws lambda update-function-code --zip-file fileb://sheets_dequeue.zip --function-name L4GG-Sheets-Dequeue
-	aws lambda update-function-configuration --function-name L4GG-Sheets-Dequeue --handler sheets_dequeue.lambda_handler
+	aws --region us-east-1 lambda update-function-code --zip-file fileb://sheets_post.zip --function-name L4GG-Sheets-Post > /dev/null
+	aws --region us-east-1 lambda update-function-code --zip-file fileb://sheets_dequeue.zip --function-name L4GG-Sheets-Dequeue > /dev/null
+	aws --region us-east-1 lambda update-function-configuration --function-name L4GG-Sheets-Post --handler sheets_post.lambda_handler > /dev/null
+	aws --region us-east-1 lambda update-function-configuration --function-name L4GG-Sheets-Dequeue --handler sheets_dequeue.lambda_handler > /dev/null
 	./configure-gateway.py
 
 sheets_post.zip:
