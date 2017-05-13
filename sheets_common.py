@@ -51,6 +51,36 @@ def post_form(service, sheet_id, sqs_url, error_chance, formdata):
     
     return 0
 
+def repost_form(service, sheet_id, sqs_url):
+    '''
+    '''
+    client = boto3.client('sqs')
+    response = client.receive_message(QueueUrl=sqs_url, VisibilityTimeout=10)
+    messages = response.get('Messages', [])
+    
+    for message in messages:
+        body = json.loads(message['Body'])
+        values, error = body['values'], body['error']
+        print('MessageId:', message['MessageId'], file=sys.stdout)
+        print('Values:', json.dumps(values), file=sys.stdout)
+        print('Error:', error, file=sys.stdout)
+    
+        # Post a new row to selected sheet
+        try:
+            # Append data to Google Spreadsheets.
+            response = service.spreadsheets().values().append(spreadsheetId=sheet_id,
+                range='CA Responses', body={'values': [values]}, valueInputOption='USER_ENTERED',
+                # Rate-limiting: https://developers.google.com/sheets/api/query-parameters
+                quotaUser=True).execute()
+
+        except Exception as e:
+            print('New error:', e, file=sys.stdout)
+    
+        else:
+            range = response.get('updates', {}).get('updatedRange')
+            client.delete_message(QueueUrl=sqs_url, ReceiptHandle=message['ReceiptHandle'])
+            print('Range:', range, file=sys.stdout)
+
 class ServiceTest (unittest.TestCase):
     
     def test_make_service(self):
@@ -117,7 +147,6 @@ class ServiceTest (unittest.TestCase):
 
     def test_post_form_random_failure(self):
         service = unittest.mock.Mock()
-
         sheet_id, sqs_url, error_chance = 'abc', 'http', 1
         formdata = {'State': 'CA', 'First': 'Lionel', 'Last': 'Hutz'}
 
@@ -137,6 +166,61 @@ class ServiceTest (unittest.TestCase):
         self.assertIn('"Lionel"', output)
         self.assertIn('"Hutz"', output)
         self.assertIn('MESSAGE-ID\n', output)
+    
+    def test_repost_form_success(self):
+        service = unittest.mock.Mock()
+        append = service.spreadsheets.return_value.values.return_value.append
+        append.return_value.execute.return_value = {'updates': {'updatedRange': 'X1'}}
+
+        sheet_id, sqs_url = 'abc', 'http'
+        messages = [{'MessageId': 'MESSAGE-ID', 'ReceiptHandle': 'YO', 'Body': '{\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ],\n  "error": "RuntimeError(\'Randomly errored\',)"\n}'}]
+
+        with unittest.mock.patch('sys.stdout') as stdout, \
+             unittest.mock.patch('boto3.client') as boto_client:
+            boto_client.return_value.receive_message.return_value = {'Messages': messages}
+            reposted = repost_form(service, sheet_id, sqs_url)
+        
+        self.assertIsNone(reposted)
+        append.assert_called_once_with(
+            body={'values': [[None, None, 'CA', 'Lionel', 'Hutz', None, None, None, None, None]]},
+            quotaUser=True, range='CA Responses', spreadsheetId='abc', valueInputOption='USER_ENTERED')
+
+        output = ''.join([call[1][0] for call in stdout.write.mock_calls])
+        self.assertIn('"Lionel"', output)
+        self.assertIn('"Hutz"', output)
+        self.assertIn('Randomly errored', output)
+        self.assertIn('Range: X1\n', output)
+        
+        boto_client.return_value.delete_message.assert_called_once_with(QueueUrl='http', ReceiptHandle='YO')
+    
+    def test_repost_form_failure(self):
+        def raises():
+            raise RuntimeError('Inside job')
+
+        service = unittest.mock.Mock()
+        append = service.spreadsheets.return_value.values.return_value.append
+        append.return_value.execute.side_effect = raises
+
+        sheet_id, sqs_url = 'abc', 'http'
+        messages = [{'MessageId': 'MESSAGE-ID', 'ReceiptHandle': 'YO', 'Body': '{\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ],\n  "error": "RuntimeError(\'Randomly errored\',)"\n}'}]
+
+        with unittest.mock.patch('sys.stdout') as stdout, \
+             unittest.mock.patch('boto3.client') as boto_client:
+            boto_client.return_value.receive_message.return_value = {'Messages': messages}
+            reposted = repost_form(service, sheet_id, sqs_url)
+        
+        self.assertIsNone(reposted)
+        append.assert_called_once_with(
+            body={'values': [[None, None, 'CA', 'Lionel', 'Hutz', None, None, None, None, None]]},
+            quotaUser=True, range='CA Responses', spreadsheetId='abc', valueInputOption='USER_ENTERED')
+
+        output = ''.join([call[1][0] for call in stdout.write.mock_calls])
+        self.assertIn('"Lionel"', output)
+        self.assertIn('"Hutz"', output)
+        self.assertIn('Randomly errored', output)
+        self.assertIn('Inside job', output)
+        
+        self.assertEqual(len(boto_client.return_value.delete_message.mock_calls), 0)
 
 if __name__ == '__main__':
     unittest.main()
