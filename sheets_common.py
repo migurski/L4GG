@@ -13,6 +13,11 @@ def make_service(cred_data):
     creds = oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict(cred_data, SCOPES)
     return apiclient.discovery.build('sheets', 'v4', credentials=creds)
 
+def pack_message_body(values, sheet_name, error):
+    '''
+    '''
+    return json.dumps(dict(values=values, sheet_name=sheet_name, error=error), indent=2, sort_keys=True)
+
 def post_form(service, sheet_id, sqs_url, error_chance, formdata):
     '''
     '''
@@ -41,7 +46,7 @@ def post_form(service, sheet_id, sqs_url, error_chance, formdata):
     except Exception as e:
         # Send errors to the queue.
         client = boto3.client('sqs')
-        message = json.dumps(dict(values=values, error=repr(e)), indent=2)
+        message = pack_message_body(values, sheet_name, repr(e))
         response = client.send_message(QueueUrl=sqs_url, MessageBody=message)
         print('SQS Message ID:', response.get('MessageId'), file=sys.stdout)
     
@@ -60,7 +65,7 @@ def repost_form(service, sheet_id, sqs_url):
     
     for message in messages:
         body = json.loads(message['Body'])
-        values, error = body['values'], body['error']
+        values, error, sheet_name = body['values'], body['error'], body['sheet_name']
         print('MessageId:', message['MessageId'], file=sys.stdout)
         print('Values:', json.dumps(values), file=sys.stdout)
         print('Error:', error, file=sys.stdout)
@@ -69,7 +74,7 @@ def repost_form(service, sheet_id, sqs_url):
         try:
             # Append data to Google Spreadsheets.
             response = service.spreadsheets().values().append(spreadsheetId=sheet_id,
-                range='CA Responses', body={'values': [values]}, valueInputOption='USER_ENTERED',
+                range=sheet_name, body={'values': [values]}, valueInputOption='USER_ENTERED',
                 # Rate-limiting: https://developers.google.com/sheets/api/query-parameters
                 quotaUser=True).execute()
 
@@ -137,7 +142,7 @@ class ServiceTest (unittest.TestCase):
             quotaUser=True, range='CA Responses', spreadsheetId='abc', valueInputOption='USER_ENTERED')
 
         boto_client.return_value.send_message.assert_called_once_with(
-            MessageBody='{\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ],\n  "error": "RuntimeError(\'Inside job\',)"\n}',
+            MessageBody='{\n  "error": "RuntimeError(\'Inside job\',)",\n  "sheet_name": "CA Responses",\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ]\n}',
             QueueUrl='http')
         
         output = ''.join([call[1][0] for call in stdout.write.mock_calls])
@@ -159,7 +164,7 @@ class ServiceTest (unittest.TestCase):
         self.assertEqual(len(service.mock_calls), 0)
         
         boto_client.return_value.send_message.assert_called_once_with(
-            MessageBody='{\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ],\n  "error": "RuntimeError(\'Randomly errored\',)"\n}',
+            MessageBody='{\n  "error": "RuntimeError(\'Randomly errored\',)",\n  "sheet_name": "CA Responses",\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ]\n}',
             QueueUrl='http')
         
         output = ''.join([call[1][0] for call in stdout.write.mock_calls])
@@ -173,7 +178,7 @@ class ServiceTest (unittest.TestCase):
         append.return_value.execute.return_value = {'updates': {'updatedRange': 'X1'}}
 
         sheet_id, sqs_url = 'abc', 'http'
-        messages = [{'MessageId': 'MESSAGE-ID', 'ReceiptHandle': 'YO', 'Body': '{\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ],\n  "error": "RuntimeError(\'Randomly errored\',)"\n}'}]
+        messages = [{'MessageId': 'MESSAGE-ID', 'ReceiptHandle': 'YO', 'Body': '{\n  "error": "RuntimeError(\'Randomly errored\',)",\n  "sheet_name": "CA Responses",\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ]\n}'}]
 
         with unittest.mock.patch('sys.stdout') as stdout, \
              unittest.mock.patch('boto3.client') as boto_client:
@@ -202,7 +207,7 @@ class ServiceTest (unittest.TestCase):
         append.return_value.execute.side_effect = raises
 
         sheet_id, sqs_url = 'abc', 'http'
-        messages = [{'MessageId': 'MESSAGE-ID', 'ReceiptHandle': 'YO', 'Body': '{\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ],\n  "error": "RuntimeError(\'Randomly errored\',)"\n}'}]
+        messages = [{'MessageId': 'MESSAGE-ID', 'ReceiptHandle': 'YO', 'Body': '{\n  "error": "RuntimeError(\'Randomly errored\',)",\n  "sheet_name": "CA Responses",\n  "values": [\n    null,\n    null,\n    "CA",\n    "Lionel",\n    "Hutz",\n    null,\n    null,\n    null,\n    null,\n    null\n  ]\n}'}]
 
         with unittest.mock.patch('sys.stdout') as stdout, \
              unittest.mock.patch('boto3.client') as boto_client:
