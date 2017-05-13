@@ -8,14 +8,12 @@ live: sheets_post.zip sheets_dequeue.zip
 sheets_post.zip:
 	mkdir -pv sheets_post
 	pip install -q -t sheets_post -r requirements-lambda.txt
-	find sheets_post/botocore/data -name '*.json' -a ! -path '*/sqs/*' -delete
 	ln sheets_*.py sheets_post/
 	cd sheets_post && zip -rq ../sheets_post.zip .
 
 sheets_dequeue.zip:
 	mkdir -pv sheets_dequeue
 	pip install -q -t sheets_dequeue -r requirements-lambda.txt
-	find sheets_dequeue/botocore/data -name '*.json' -a ! -path '*/sqs/*' -delete
 	ln sheets_*.py sheets_dequeue/
 	cd sheets_dequeue && zip -rq ../sheets_dequeue.zip .
 
