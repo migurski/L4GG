@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import os, sys, json, logging, datetime, random
-import boto3, sheets_common
+import os, sys, json, logging, datetime
+import sheets_common
 
 def get_fields(service, sheet_id, sheet_name):
     '''
@@ -11,44 +11,6 @@ def get_fields(service, sheet_id, sheet_name):
 
     fields = request.execute().get('values', [[]])[0]
     return fields
-
-def post_form(service, sheet_id, sqs_url, error_chance, formdata):
-    '''
-    '''
-    # Sheets are named by U.S. state
-    sheet_name = '{State} Responses'.format(**formdata)
-
-    fields = ['Timestamp', 'County', 'State', 'First', 'Last', 'Email',
-              'Zip (Home)', 'Zip (Work)', 'Practice Status', 'Link']
-    values = [formdata.get(name, None) for name in fields]
-    
-    print('Fields:', json.dumps(fields))
-    print('Values:', json.dumps(values))
-    
-    # Post a new row to selected sheet
-    try:
-        # Randomly fail to keep a trickle of messages flowing to the queue.
-        if random.random() < error_chance:
-            raise RuntimeError('Randomly errored')
-
-        # Append data to Google Spreadsheets.
-        request = service.spreadsheets().values().append(spreadsheetId=sheet_id,
-            range=sheet_name, body={'values': [values]}, valueInputOption='USER_ENTERED',
-            # Rate-limiting: https://developers.google.com/sheets/api/query-parameters
-            quotaUser=True)
-
-    except Exception as e:
-        # Send errors to the queue.
-        client = boto3.client('sqs')
-        message = json.dumps(dict(values=values, error=repr(e)), indent=2)
-        response = client.send_message(QueueUrl=sqs_url, MessageBody=message)
-        print('SQS Message ID:', response.get('MessageId'))
-    
-    else:
-        range = request.execute().get('updates', {}).get('updatedRange')
-        print('Range:', range)
-    
-    return 0
 
 def lambda_handler(event, context):
     print('Event:', json.dumps(event))
@@ -80,7 +42,7 @@ def lambda_handler(event, context):
         'Link': event_data.get('link'),
         }
     
-    post_form(service, sheet_id, sqs_url, error_chance, formdata)
+    sheets_common.post_form(service, sheet_id, sqs_url, error_chance, formdata)
     return {'Location': redirect_url}
 
 def main(filename, sheet_id, sqs_url):
@@ -99,7 +61,7 @@ def main(filename, sheet_id, sqs_url):
         'Practice Status': 'A-Okay',
         'Link': 'https://example.com',
         }
-    return post_form(service, sheet_id, sqs_url, .5, formdata)
+    return sheets_common.post_form(service, sheet_id, sqs_url, .5, formdata)
 
 if __name__ == '__main__':
     filename, sheet_id, sqs_url = sys.argv[1:]
