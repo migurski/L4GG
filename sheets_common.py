@@ -5,7 +5,7 @@ side effects. If an append fails for any reason, it's written to a secondary
 queue where it is attemped later. Queued data is only deleted after being
 written successfully to Google sheets.
 '''
-import json, random, sys
+import json, random, sys, collections
 import unittest, unittest.mock
 import oauth2client.service_account
 import apiclient.discovery
@@ -13,6 +13,8 @@ import boto3
 
 LOG_NAME = 'googleapiclient.discovery_cache'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+FIELDS = ['Timestamp', 'County', 'State', 'First', 'Last', 'Email',
+          'Zip (Home)', 'Zip (Work)', 'Practice Status', 'Link']
 
 def make_service(cred_data):
     '''
@@ -25,21 +27,18 @@ def pack_message_body(values, sheet_name, error):
     '''
     return json.dumps(dict(values=values, sheet_name=sheet_name, error=error), indent=2, sort_keys=True)
 
-def post_form(service, sheet_id, sqs_url, error_chance, formdata):
+def post_form(service, sheet_id, sqs_url, error_chance, form_data):
     ''' Post form data to Google sheets.
     
         If something goes wrong, save the form data to the secondary queue.
     '''
     # Sheets are named by U.S. state
-    sheet_name = '{State} Responses'.format(**formdata)
+    sheet_name = '{State} Responses'.format(**form_data)
+    sheet_data = collections.OrderedDict([(n, form_data.get(n)) for n in FIELDS])
+    row_values = list(sheet_data.values())
+    
+    print('Sheet data:', json.dumps(sheet_data), file=sys.stdout)
 
-    fields = ['Timestamp', 'County', 'State', 'First', 'Last', 'Email',
-              'Zip (Home)', 'Zip (Work)', 'Practice Status', 'Link']
-    values = [formdata.get(name, None) for name in fields]
-    
-    print('Fields:', json.dumps(fields), file=sys.stdout)
-    print('Values:', json.dumps(values), file=sys.stdout)
-    
     # Post a new row to selected sheet
     try:
         # Randomly fail to keep a trickle of messages flowing to the queue.
@@ -48,14 +47,14 @@ def post_form(service, sheet_id, sqs_url, error_chance, formdata):
 
         # Append data to Google Spreadsheets.
         response = service.spreadsheets().values().append(spreadsheetId=sheet_id,
-            range=sheet_name, body={'values': [values]}, valueInputOption='USER_ENTERED',
+            range=sheet_name, body={'values': [row_values]}, valueInputOption='USER_ENTERED',
             # Rate-limiting: https://developers.google.com/sheets/api/query-parameters
             quotaUser=True).execute()
 
     except Exception as e:
         # Send errors to the queue.
         client = boto3.client('sqs')
-        message = pack_message_body(values, sheet_name, repr(e))
+        message = pack_message_body(row_values, sheet_name, repr(e))
         response = client.send_message(QueueUrl=sqs_url, MessageBody=message)
         print('SQS Message ID:', response.get('MessageId'), file=sys.stdout)
     
@@ -76,16 +75,16 @@ def repost_form(service, sheet_id, sqs_url):
     
     for message in messages:
         body = json.loads(message['Body'])
-        values, error, sheet_name = body['values'], body['error'], body['sheet_name']
+        row_values, error, sheet_name = body['values'], body['error'], body['sheet_name']
         print('MessageId:', message['MessageId'], file=sys.stdout)
-        print('Values:', json.dumps(values), file=sys.stdout)
+        print('Values:', json.dumps(row_values), file=sys.stdout)
         print('Error:', error, file=sys.stdout)
     
         # Post a new row to selected sheet
         try:
             # Append data to Google Spreadsheets.
             response = service.spreadsheets().values().append(spreadsheetId=sheet_id,
-                range=sheet_name, body={'values': [values]}, valueInputOption='USER_ENTERED',
+                range=sheet_name, body={'values': [row_values]}, valueInputOption='USER_ENTERED',
                 # Rate-limiting: https://developers.google.com/sheets/api/query-parameters
                 quotaUser=True).execute()
 
@@ -131,8 +130,8 @@ class ServiceTest (unittest.TestCase):
             quotaUser=True, range='CA Responses', spreadsheetId='abc', valueInputOption='USER_ENTERED')
 
         output = ''.join([call[1][0] for call in stdout.write.mock_calls])
-        self.assertIn('"Lionel"', output)
-        self.assertIn('"Hutz"', output)
+        self.assertIn('Lionel', output)
+        self.assertIn('Hutz', output)
         self.assertIn('Range: X1\n', output)
 
     def test_post_form_google_failure(self):
@@ -163,8 +162,8 @@ class ServiceTest (unittest.TestCase):
             QueueUrl='http')
         
         output = ''.join([call[1][0] for call in stdout.write.mock_calls])
-        self.assertIn('"Lionel"', output)
-        self.assertIn('"Hutz"', output)
+        self.assertIn('Lionel', output)
+        self.assertIn('Hutz', output)
         self.assertIn('MESSAGE-ID\n', output)
 
     def test_post_form_random_failure(self):
@@ -187,8 +186,8 @@ class ServiceTest (unittest.TestCase):
             QueueUrl='http')
         
         output = ''.join([call[1][0] for call in stdout.write.mock_calls])
-        self.assertIn('"Lionel"', output)
-        self.assertIn('"Hutz"', output)
+        self.assertIn('Lionel', output)
+        self.assertIn('Hutz', output)
         self.assertIn('MESSAGE-ID\n', output)
     
     def test_repost_form_success(self):
@@ -212,8 +211,8 @@ class ServiceTest (unittest.TestCase):
             quotaUser=True, range='CA Responses', spreadsheetId='abc', valueInputOption='USER_ENTERED')
 
         output = ''.join([call[1][0] for call in stdout.write.mock_calls])
-        self.assertIn('"Lionel"', output)
-        self.assertIn('"Hutz"', output)
+        self.assertIn('Lionel', output)
+        self.assertIn('Hutz', output)
         self.assertIn('Randomly errored', output)
         self.assertIn('Range: X1\n', output)
         
@@ -243,8 +242,8 @@ class ServiceTest (unittest.TestCase):
             quotaUser=True, range='CA Responses', spreadsheetId='abc', valueInputOption='USER_ENTERED')
 
         output = ''.join([call[1][0] for call in stdout.write.mock_calls])
-        self.assertIn('"Lionel"', output)
-        self.assertIn('"Hutz"', output)
+        self.assertIn('Lionel', output)
+        self.assertIn('Hutz', output)
         self.assertIn('Randomly errored', output)
         self.assertIn('Inside job', output)
         
