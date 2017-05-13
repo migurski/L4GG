@@ -13,7 +13,7 @@ def get_fields(service, sheet_id, sheet_name):
     return fields
 
 def lambda_handler(event, context):
-    print('Event:', json.dumps(event))
+    print('Lambda event:', json.dumps(event))
     
     # silence annoying debug output from Google libraries:
     # https://github.com/google/google-api-python-client/issues/299#issuecomment-255793971
@@ -46,7 +46,7 @@ def lambda_handler(event, context):
     try:
         sheets_common.post_form(service, sheet_id, sqs_url, error_chance, formdata)
     except Exception as e:
-        print('Uncaught error:', e, file=sys.stdout)
+        print('Uncaught error:', e)
         return {'Location': error_url}
     else:
         return {'Location': redirect_url}
