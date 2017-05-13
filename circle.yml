@@ -9,3 +9,10 @@ dependencies:
 test:
   override:
     - python3 sheets_common.py
+
+deployment:
+  lambda:
+    branch: [master]
+    commands:
+      - pip3 install -r requirements.txt
+      - make sheets_post.zip sheets_dequeue.zip
