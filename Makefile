@@ -5,9 +5,11 @@ live: function.zip
 
 function.zip:
 	mkdir -pv function
-	pip install -t function google-api-python-client
+	pip install -q -t function -r requirements-lambda.txt
+	#find function -name __pycache__ | xargs rm -rf
+	find function/botocore/data -name '*.json' -a ! -path '*/sqs/*' -delete
 	ln sheets_post.py function/sheets_post.py
-	cd function && zip -r ../function.zip .
+	cd function && zip -rq ../function.zip .
 
 clean:
 	rm -rf function function.zip

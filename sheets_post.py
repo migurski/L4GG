@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import os, sys, json, logging, datetime
+import os, sys, json, logging, datetime, random
 from apiclient import discovery
 from oauth2client.service_account import ServiceAccountCredentials
+import boto3
 
 def make_service(cred_data):
     '''
@@ -20,7 +21,7 @@ def get_fields(service, sheet_id, sheet_name):
     fields = request.execute().get('values', [[]])[0]
     return fields
 
-def post_form(service, sheet_id, formdata):
+def post_form(service, sheet_id, sqs_url, error_chance, formdata):
     '''
     '''
     # Sheets are named by U.S. state
@@ -34,13 +35,27 @@ def post_form(service, sheet_id, formdata):
     print('Values:', json.dumps(values))
     
     # Post a new row to selected sheet
-    request = service.spreadsheets().values().append(spreadsheetId=sheet_id,
-        range=sheet_name, body={'values': [values]}, valueInputOption='USER_ENTERED',
-        # Rate-limiting: https://developers.google.com/sheets/api/query-parameters
-        quotaUser=True)
+    try:
+        # Randomly fail to keep a trickle of messages flowing to the queue.
+        if random.random() < error_chance:
+            raise RuntimeError('Randomly errored')
 
-    range = request.execute().get('updates', {}).get('updatedRange')
-    print('Range:', range)
+        # Append data to Google Spreadsheets.
+        request = service.spreadsheets().values().append(spreadsheetId=sheet_id,
+            range=sheet_name, body={'values': [values]}, valueInputOption='USER_ENTERED',
+            # Rate-limiting: https://developers.google.com/sheets/api/query-parameters
+            quotaUser=True)
+
+    except Exception as e:
+        # Send errors to the queue.
+        client = boto3.client('sqs')
+        message = json.dumps(dict(values=values, error=repr(e)), indent=2)
+        response = client.send_message(QueueUrl=sqs_url, MessageBody=message)
+        print('SQS Message ID:', response.get('MessageId'))
+    
+    else:
+        range = request.execute().get('updates', {}).get('updatedRange')
+        print('Range:', range)
     
     return 0
 
@@ -55,6 +70,8 @@ def lambda_handler(event, context):
     creds = json.loads(os.environ['webform_serviceaccount'])
     sheet_id = os.environ['spreadsheet_id']
     redirect_url = os.environ['redirect']
+    sqs_url = os.environ['sqs_url']
+    error_chance = float(os.environ['error_chance'])
     service = make_service(creds)
     
     # Assemble form data
@@ -72,10 +89,10 @@ def lambda_handler(event, context):
         'Link': event_data.get('link'),
         }
     
-    post_form(service, sheet_id, formdata)
+    post_form(service, sheet_id, sqs_url, error_chance, formdata)
     return {'Location': redirect_url}
 
-def main(filename, sheet_id):
+def main(filename, sheet_id, sqs_url):
     with open(filename) as file:
         creds = json.load(file)
         service = make_service(creds)
@@ -91,8 +108,8 @@ def main(filename, sheet_id):
         'Practice Status': 'A-Okay',
         'Link': 'https://example.com',
         }
-    return post_form(service, sheet_id, formdata)
+    return post_form(service, sheet_id, sqs_url, .5, formdata)
 
 if __name__ == '__main__':
-    filename, sheet_id = sys.argv[1:]
-    exit(main(filename, sheet_id))
+    filename, sheet_id, sqs_url = sys.argv[1:]
+    exit(main(filename, sheet_id, sqs_url))
