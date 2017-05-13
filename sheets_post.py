@@ -1,15 +1,6 @@
 #!/usr/bin/env python3
 import os, sys, json, logging, datetime, random
-from apiclient import discovery
-from oauth2client.service_account import ServiceAccountCredentials
-import boto3
-
-def make_service(cred_data):
-    '''
-    '''
-    scopes = ['https://www.googleapis.com/auth/spreadsheets']
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_data, scopes)
-    return discovery.build('sheets', 'v4', credentials=creds)
+import boto3, sheets_common
 
 def get_fields(service, sheet_id, sheet_name):
     '''
@@ -64,7 +55,7 @@ def lambda_handler(event, context):
     
     # silence annoying debug output from Google libraries:
     # https://github.com/google/google-api-python-client/issues/299#issuecomment-255793971
-    logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
+    logging.getLogger(sheets_common.LOG_NAME).setLevel(logging.ERROR)
     
     # retrieve credentials stored in environment vars
     creds = json.loads(os.environ['webform_serviceaccount'])
@@ -72,7 +63,7 @@ def lambda_handler(event, context):
     redirect_url = os.environ['redirect']
     sqs_url = os.environ['sqs_url']
     error_chance = float(os.environ['error_chance'])
-    service = make_service(creds)
+    service = sheets_common.make_service(creds)
     
     # Assemble form data
     event_data = event.get('data', {})
@@ -95,7 +86,7 @@ def lambda_handler(event, context):
 def main(filename, sheet_id, sqs_url):
     with open(filename) as file:
         creds = json.load(file)
-        service = make_service(creds)
+        service = sheets_common.make_service(creds)
     formdata = {
         'Timestamp': str(datetime.datetime.utcnow()),
         'County': 'Alameda',

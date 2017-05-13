@@ -1,17 +1,26 @@
-live: function.zip
-	aws lambda update-function-code --zip-file fileb://function.zip --function-name L4GG-Sheets-Post
+live: sheets_post.zip sheets_dequeue.zip
+	aws lambda update-function-code --zip-file fileb://sheets_post.zip --function-name L4GG-Sheets-Post
 	aws lambda update-function-configuration --function-name L4GG-Sheets-Post --handler sheets_post.lambda_handler
+	aws lambda update-function-code --zip-file fileb://sheets_dequeue.zip --function-name L4GG-Sheets-Dequeue
+	aws lambda update-function-configuration --function-name L4GG-Sheets-Dequeue --handler sheets_dequeue.lambda_handler
 	./configure-gateway.py
 
-function.zip:
-	mkdir -pv function
-	pip install -q -t function -r requirements-lambda.txt
-	#find function -name __pycache__ | xargs rm -rf
-	find function/botocore/data -name '*.json' -a ! -path '*/sqs/*' -delete
-	ln sheets_post.py function/sheets_post.py
-	cd function && zip -rq ../function.zip .
+sheets_post.zip:
+	mkdir -pv sheets_post
+	pip install -q -t sheets_post -r requirements-lambda.txt
+	find sheets_post/botocore/data -name '*.json' -a ! -path '*/sqs/*' -delete
+	ln sheets_*.py sheets_post/
+	cd sheets_post && zip -rq ../sheets_post.zip .
+
+sheets_dequeue.zip:
+	mkdir -pv sheets_dequeue
+	pip install -q -t sheets_dequeue -r requirements-lambda.txt
+	find sheets_dequeue/botocore/data -name '*.json' -a ! -path '*/sqs/*' -delete
+	ln sheets_*.py sheets_dequeue/
+	cd sheets_dequeue && zip -rq ../sheets_dequeue.zip .
 
 clean:
-	rm -rf function function.zip
+	rm -rf sheets_post sheets_post.zip
+	rm -rf sheets_dequeue sheets_dequeue.zip
 
 .PHONY: clean live

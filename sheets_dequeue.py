@@ -1,15 +1,6 @@
 #!/usr/bin/env python3
 import os, sys, json, logging, datetime, random
-from apiclient import discovery
-from oauth2client.service_account import ServiceAccountCredentials
-import boto3
-
-def make_service(cred_data):
-    '''
-    '''
-    scopes = ['https://www.googleapis.com/auth/spreadsheets']
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_data, scopes)
-    return discovery.build('sheets', 'v4', credentials=creds)
+import boto3, sheets_common
 
 def repost_form(service, sheet_id, sqs_url):
     '''
@@ -44,7 +35,7 @@ def repost_form(service, sheet_id, sqs_url):
 def main(filename, sheet_id, sqs_url):
     with open(filename) as file:
         creds = json.load(file)
-        service = make_service(creds)
+        service = sheets_common.make_service(creds)
     return repost_form(service, sheet_id, sqs_url)
 
 if __name__ == '__main__':
