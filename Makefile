@@ -17,11 +17,9 @@ sheets_dequeue.zip:
 	ln sheets_*.py sheets_dequeue/
 	cd sheets_dequeue && zip -rq ../sheets_dequeue.zip .
 
-data-states.js:
+data-census.js:
 	echo "var us_states = `curl 'https://api.census.gov/data/2010/sf1?get=NAME&for=state:*' -s`;" > $@
-
-data-counties.js:
-	echo "var us_counties = `curl 'https://api.census.gov/data/2010/sf1?get=NAME&for=county:*' -s`;" > $@
+	echo "var us_counties = `curl 'https://api.census.gov/data/2010/sf1?get=NAME&for=county:*' -s`;" >> $@
 
 clean:
 	rm -rf sheets_post sheets_post.zip
