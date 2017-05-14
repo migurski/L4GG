@@ -1,3 +1,15 @@
+var fips_postalcode = {
+    "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO",
+    "09": "CT", "10": "DE", "11": "DC", "12": "FL", "13": "GA", "15": "HI",
+    "16": "ID", "17": "IL", "18": "IN", "19": "IA", "20": "KS", "21": "KY",
+    "22": "LA", "23": "ME", "24": "MD", "25": "MA", "26": "MI", "27": "MN",
+    "28": "MS", "29": "MO", "30": "MT", "31": "NE", "32": "NV", "33": "NH",
+    "34": "NJ", "35": "NM", "36": "NY", "37": "NC", "38": "ND", "39": "OH",
+    "40": "OK", "41": "OR", "42": "PA", "44": "RI", "45": "SC", "46": "SD",
+    "47": "TN", "48": "TX", "49": "UT", "50": "VT", "51": "VA", "53": "WA",
+    "54": "WV", "55": "WI", "56": "WY", "72": "PR", "78": "VI"
+    };
+
 /**
  * Create an inverted index of U.S. county and state names.
  */
@@ -69,4 +81,78 @@ function intersect_lists(inputs)
     }
     
     return output;
+}
+
+function get_autocomplete(state_id)
+{
+    var indexed = index_geographies(us_states, us_counties);
+    indexed.suggestion_fips = {};
+
+    function on_source(request, response)
+    {
+        var term_query = request.term.trim().toLowerCase(),
+            term_parts = term_query.split(/\s+/),
+            term_matches = [];
+    
+        console.log('term_parts:', term_parts);
+    
+        // create a list of lists, one for each part of the search term
+        for(var i in term_parts)
+        {
+            var part_matches = indexed.index[term_parts[i]];
+            term_matches.push(part_matches);
+        }
+
+        // calculate intersection of all those lists to match all terms
+        var matched_fips = intersect_lists(term_matches).sort();
+    
+        // build up a list of suggestions
+        var suggestions = [];
+        indexed.suggestion_fips = {};
+    
+        for(var i in matched_fips)
+        {
+            var fips = matched_fips[i],
+                full_name = indexed.fullnames[fips];
+
+            // skip any non-new suggestions
+            if(suggestions.indexOf(full_name) != -1)
+            {
+                continue;
+            }
+
+            // add new suggestions to the list
+            if(full_name.toLowerCase().substr(0, term_query.length) == term_query) {
+                // complete prefix matches go to the top
+                suggestions.unshift(full_name);
+            } else {
+                // other matches go to the bottom
+                suggestions.push(full_name);
+            }
+        
+            indexed.suggestion_fips[full_name] = fips;
+        }
+    
+        // return just the first few to keep the UI snappy
+        response(suggestions.slice(0, 10));
+    }
+    
+    function on_select(event, ui)
+    {
+        var state_select = document.getElementById(state_id),
+            selected_fips = indexed.suggestion_fips[ui.item.label],
+            state_code = fips_postalcode[selected_fips.substr(0, 2)];
+        
+        console.log('changed', ui.item.label, selected_fips, state_code);
+        
+        for(var i in state_select.options)
+        {
+            state_select.options[i].selected = (state_select.options[i].value == state_code);
+        }
+    }
+    
+    return {
+        source: on_source,
+        select: on_select
+        };
 }

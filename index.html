@@ -19,10 +19,61 @@
 		    <input type="email" name="email" placeholder="Email Address">
 		    <br>
 		    <input type="text" name="county" placeholder="County" id="county">
-		    <select name="state">
-		        <option value="">(Choose One)</option>
+		    <select name="state" id="state">
+		        <option value="">State (Choose One)</option>
+		        <option value="AK">Alaska</option>
+		        <option value="AL">Alabama</option>
+		        <option value="AR">Arkansas</option>
+		        <option value="AZ">Arizona</option>
 		        <option value="CA">California</option>
+		        <option value="CO">Colorado</option>
+		        <option value="CT">Connecticut</option>
+		        <option value="DC">District of Columbia</option>
+		        <option value="DE">Delaware</option>
+		        <option value="FL">Florida</option>
+		        <option value="GA">Georgia</option>
+		        <option value="HI">Hawaii</option>
+		        <option value="IA">Iowa</option>
+		        <option value="ID">Idaho</option>
+		        <option value="IL">Illinois</option>
+		        <option value="IN">Indiana</option>
+		        <option value="KS">Kansas</option>
+		        <option value="KY">Kentucky</option>
+		        <option value="LA">Louisiana</option>
+		        <option value="MA">Massachusetts</option>
+		        <option value="MD">Maryland</option>
+		        <option value="ME">Maine</option>
+		        <option value="MI">Michigan</option>
+		        <option value="MN">Minnesota</option>
+		        <option value="MO">Missouri</option>
+		        <option value="MS">Mississippi</option>
+		        <option value="MT">Montana</option>
+		        <option value="NC">North Carolina</option>
+		        <option value="ND">North Dakota</option>
+		        <option value="NE">Nebraska</option>
+		        <option value="NH">New Hampshire</option>
+		        <option value="NJ">New Jersey</option>
+		        <option value="NM">New Mexico</option>
+		        <option value="NV">Nevada</option>
 		        <option value="NY">New York</option>
+		        <option value="OH">Ohio</option>
+		        <option value="OK">Oklahoma</option>
+		        <option value="OR">Oregon</option>
+		        <option value="PA">Pennsylvania</option>
+		        <option value="PR">Puerto Rico</option>
+		        <option value="RI">Rhode Island</option>
+		        <option value="SC">South Carolina</option>
+		        <option value="SD">South Dakota</option>
+		        <option value="TN">Tennessee</option>
+		        <option value="TX">Texas</option>
+		        <option value="UT">Utah</option>
+		        <option value="VA">Virginia</option>
+		        <option value="VI">Virgin Islands</option>
+		        <option value="VT">Vermont</option>
+		        <option value="WA">Washington</option>
+		        <option value="WI">Wisconsin</option>
+		        <option value="WV">West Virginia</option>
+		        <option value="WY">Wyoming</option>
 		    </select>
 		    <br>
 		    <input type="text" name="home_zip" placeholder="Zip Code (Home)">
@@ -49,55 +100,7 @@
         </form>
 		<script lang="javascript">
 		
-		    var indexed = index_geographies(us_states, us_counties);
-		    
-		    function on_count(request, response)
-		    {
-		        var term_query = request.term.trim().toLowerCase(),
-		            term_parts = term_query.split(/\s+/),
-		            term_matches = [];
-		        
-		        console.log('term_parts:', term_parts);
-		        
-		        // create a list of lists, one for each part of the search term
-		        for(var i in term_parts)
-		        {
-		            var part_matches = indexed.index[term_parts[i]];
-		            term_matches.push(part_matches);
-		        }
-
-		        // calculate intersection of all those lists to match all terms
-		        var matched_fips = intersect_lists(term_matches).sort();
-		        
-		        // build up a list of suggestions
-		        var suggestions = [];
-		        
-		        for(var i in matched_fips)
-		        {
-		            var fips = matched_fips[i],
-		                full_name = indexed.fullnames[fips];
-
-                    // skip any non-new suggestions
-                    if(suggestions.indexOf(full_name) != -1)
-                    {
-                        continue;
-                    }
-
-                    // add new suggestions to the list
-                    if(full_name.toLowerCase().substr(0, term_query.length) == term_query) {
-                        // complete prefix matches go to the top
-                        suggestions.unshift(full_name);
-                    } else {
-                        // other matches go to the bottom
-                        suggestions.push(full_name);
-                    }
-		        }
-		        
-		        // return just the first few to keep the UI snappy
-		        response(suggestions.slice(0, 10));
-		    }
-		    
-		    $("#county").autocomplete({ source: on_count });
+		    $("#county").autocomplete(get_autocomplete('state'));
 		
 		</script>
     </body>
