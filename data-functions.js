@@ -1,3 +1,4 @@
+// Copied from https://www.bls.gov/cew/cewedr10.htm
 var fips_postalcode = {
     "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO",
     "09": "CT", "10": "DE", "11": "DC", "12": "FL", "13": "GA", "15": "HI",
