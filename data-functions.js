@@ -108,34 +108,36 @@ function get_autocomplete(state_id)
         var matched_fips = intersect_lists(term_matches).sort();
     
         // build up a list of suggestions
-        var suggestions = [];
+        var seen_fips = {}, suggestions1 = [], suggestions2 = [];
         indexed.suggestion_fips = {};
     
         for(var i in matched_fips)
         {
             var fips = matched_fips[i],
-                full_name = indexed.fullnames[fips];
+                full_name = indexed.fullnames[fips],
+                short_name = indexed.names[fips];
 
-            // skip any non-new suggestions
-            if(suggestions.indexOf(full_name) != -1)
-            {
+            if(fips in seen_fips) {
+                // skip any non-new suggestions
                 continue;
+            } else {
+                seen_fips[fips] = true;
             }
 
-            // add new suggestions to the list
+            // add new suggestions to the lists
             if(full_name.toLowerCase().substr(0, term_query.length) == term_query) {
-                // complete prefix matches go to the top
-                suggestions.unshift(full_name);
+                // complete prefix matches go to the first list
+                suggestions1.push({label: full_name, value: short_name});
             } else {
-                // other matches go to the bottom
-                suggestions.push(full_name);
+                // other matches go to the second list
+                suggestions2.push({label: full_name, value: short_name});
             }
         
             indexed.suggestion_fips[full_name] = fips;
         }
-    
+        
         // return just the first few to keep the UI snappy
-        response(suggestions.slice(0, 10));
+        response(suggestions1.concat(suggestions2).slice(0, 10));
     }
     
     function on_select(event, ui)
