@@ -5,9 +5,9 @@
 		<title>
 			L4GG Form
 		</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<script src="scripts/census.js"></script>
 		<script src="scripts/functions.js"></script>
-		<link rel="stylesheet" href="style/writ.css">
 		<link rel="stylesheet" href="style/style.css">
 		<link rel="stylesheet" href="style/jquery-ui.min.css">
 		<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
@@ -52,7 +52,6 @@
         </p>
 
 		<form action="https://xuvejzx9ni.execute-api.us-east-1.amazonaws.com/production/form" method="POST">
-		    <h4>Required</h4>
 		    <p>
                 <label for="first_name">First Name *</label>
                 <input type="text" name="first_name" placeholder="First" required>
@@ -72,7 +71,7 @@
 		    <p>
                 <label for="state">State</label>
                 <select name="state" id="state">
-                    <option value="">State (Choose One)</option>
+                    <option value="">(Choose One)</option>
                     <option value="AK">Alaska</option>
                     <option value="AL">Alabama</option>
                     <option value="AR">Arkansas</option>

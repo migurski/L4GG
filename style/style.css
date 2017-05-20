@@ -6,17 +6,21 @@
 body, input, select { font-family: 'Source Sans Pro', sans-serif }
 h1 { font-family: "gothamrnd", sans-serif }
 
+html
+{
+    font-size: 14px;
+}
+
 body
 {
-    width: 60em;
-    margin: 2em auto;
+    margin: 1.5em;
     background-color: #E0E0E0; /* gray */
     color: #40B2E2; /* light blue */
     color: #323A65; /* dark blue */
 }
 
-h1 { font-size: 225% }
-h2 { font-size: 150% }
+h1 { font-size: 2.25rem }
+h2 { font-size: 1.50rem }
 
 form p label, form p input
 {
@@ -30,10 +34,9 @@ form p select
     border-bottom: 1px solid rgba(0, 0, 0, .1);
     background-color: rgba(255, 255, 255, 0);
     font-size: 150%;
-    padding: .35em;
-    position: relative;
-    left: -.35em;
-    width: 16em;
+    padding: .35rem 0;
+    margin: 0 0 .2rem 0;
+    width: 100%;
 }
 
 form p select
@@ -43,8 +46,48 @@ form p select
 
 form p input[type=submit]
 {
-    width: 8em;
+    width: 100%;
+    margin: 0;
     border-radius: 3px;
     background-color: #40B2E2;
     color: white;
+}
+
+/*
+ * Larger type and layout for iPad and larger screens.
+ */
+@media only screen and (min-width: 480px)
+{
+    html
+    {
+        font-size: 16px;
+    }
+
+    form p input,
+    form p select
+    {
+        width: 24rem;
+    }
+
+    form p input[type=submit]
+    {
+        width: 12rem;
+    }
+}
+
+/*
+ * Wider body margings for desktop and larger screens.
+ */
+@media only screen and (min-width: 860px)
+{
+    html
+    {
+        font-size: 18px;
+    }
+
+    body
+    {
+        width: 45rem;
+        margin: 2rem auto;
+    }
 }
