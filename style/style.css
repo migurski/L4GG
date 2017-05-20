@@ -1,0 +1,50 @@
+@font-face {
+    font-family: "gothamrnd";
+    src: url("https://static-assets.strikinglycdn.com/fonts/themes/fresh/gothamrnd-book.woff") format('woff');
+}
+
+body, input, select { font-family: 'Source Sans Pro', sans-serif }
+h1 { font-family: "gothamrnd", sans-serif }
+
+body
+{
+    width: 60em;
+    margin: 2em auto;
+    background-color: #E0E0E0; /* gray */
+    color: #40B2E2; /* light blue */
+    color: #323A65; /* dark blue */
+}
+
+h1 { font-size: 225% }
+h2 { font-size: 150% }
+
+form p label, form p input
+{
+    display: block;
+}
+
+form p input,
+form p select
+{
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, .1);
+    background-color: rgba(255, 255, 255, 0);
+    font-size: 150%;
+    padding: .35em;
+    position: relative;
+    left: -.35em;
+    width: 16em;
+}
+
+form p select
+{
+    font-size: 122%;
+}
+
+form p input[type=submit]
+{
+    width: 8em;
+    border-radius: 3px;
+    background-color: #40B2E2;
+    color: white;
+}
