@@ -22,23 +22,37 @@ body
 h1 { font-size: 2.25rem }
 h2 { font-size: 1.50rem }
 
-form p label, form p input
+form p label,
+form p input[type=text],
+form p input[type=email],
+form p input[type=submit]
 {
     display: block;
 }
 
-form p input,
+form p input[type=text],
+form p input[type=email],
+form p input[type=submit],
 form p select
 {
     border: none;
     border-bottom: 1px solid rgba(0, 0, 0, .1);
     background-color: rgba(255, 255, 255, 0);
-    font-size: 150%;
     padding: .35rem 0;
     margin: 0 0 .2rem 0;
     width: 100%;
 }
 
+form p input[type=text],
+form p input[type=email],
+form p input[type=submit],
+form p input[type=checkbox],
+form p select
+{
+    font-size: 150%;
+}
+
+form p label.choice,
 form p select
 {
     font-size: 122%;
@@ -63,7 +77,9 @@ form p input[type=submit]
         font-size: 16px;
     }
 
-    form p input,
+    form p input[type=text],
+    form p input[type=email],
+    form p input[type=submit],
     form p select
     {
         width: 24rem;

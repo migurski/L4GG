@@ -67,6 +67,7 @@
 		    <p>
                 <label for="county">County</label>
                 <input type="text" name="county" placeholder="County" id="county">
+                <small>Where you’ll work to ensure rights are being respected</small>
 		    </p>
 		    <p>
                 <label for="state">State</label>
@@ -128,12 +129,8 @@
                 </select>
 		    </p>
 		    <p>
-                <label for="home_zip">Zip Code (Home)</label>
-                <input type="text" pattern="[0-9]*" name="home_zip" placeholder="00000">
-		    </p>
-		    <p>
-                <label for="work_zip">Zip Code (Work)</label>
-                <input type="text" pattern="[0-9]*" name="work_zip" placeholder="00000">
+                <label for="zip_code">Primary Zip Code</label>
+                <input type="text" pattern="[0-9]*" name="zip_code" placeholder="00000">
 		    </p>
 		    <p>
                 <label for="practice_status">Status</label>
@@ -150,9 +147,17 @@
                 </select>
 		    </p>
 		    <p>
-                <label for="link">Link</label>
-                <input type="url" name="link" placeholder="http://example.com">
-                <small>Profile page, employer website, or other URL that can be used to confirm credentials.</small>
+                National Campaigns
+                <br>
+                <small>Which national campaigns are you interested in working on in your county? Choose as many as you like.</small>
+                <label class="choice"><input type="checkbox" name="campaigns" value="Voting Rights"> Voting Rights</label>
+                <label class="choice"><input type="checkbox" name="campaigns" value="Criminal Justice Reform"> Criminal Justice Reform</label>
+                <label class="choice"><input type="checkbox" name="campaigns" value="Notify me of future campaigns"> Notify me of future campaigns</label>
+		    </p>
+		    <p>
+                Are you interested in coordinating other volunteers?
+                <label class="choice"><input type="radio" name="coordinating" value="Yes"> Yes</label>
+                <label class="choice"><input type="radio" name="coordinating" value="No"> No</label>
 		    </p>
 		    <p>
                 <input type="submit">

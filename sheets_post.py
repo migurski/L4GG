@@ -33,14 +33,14 @@ def lambda_handler(event, context):
     formdata = {
         'Timestamp': str(datetime.datetime.utcnow()),
         'County': event_data.get('county'),
-        'State': event_data.get('state'),
+        'State': event_data.get('state') or 'Stateless',
         'First': event_data.get('first_name'),
         'Last': event_data.get('last_name'),
         'Email': event_data.get('email'),
-        'Zip (Home)': event_data.get('home_zip'),
-        'Zip (Work)': event_data.get('work_zip'),
+        'Primary Zip': event_data.get('zip_code'),
         'Practice Status': event_data.get('practice_status'),
-        'Link': event_data.get('link'),
+        'Campaigns': event_data.get('campaigns'),
+        'Coordinating': event_data.get('coordinating'),
         }
     
     try:

@@ -14,7 +14,7 @@ import boto3
 LOG_NAME = 'googleapiclient.discovery_cache'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 FIELDS = ['Timestamp', 'County', 'State', 'First', 'Last', 'Email',
-          'Zip (Home)', 'Zip (Work)', 'Practice Status', 'Link']
+          'Primary Zip', 'Practice Status', 'Campaigns', 'Coordinating']
 
 def make_service(cred_data):
     '''
