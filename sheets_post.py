@@ -27,10 +27,10 @@ def lambda_handler(event, context):
     sqs_url = os.environ['sqs_url']
     error_chance = float(os.environ['error_chance'])
     service = sheets_common.make_service(creds)
-    campaigns = [value for (key, value) in event.items() if key.startswith('campaigns_')]
     
     # Assemble form data
     event_data = event.get('data', {})
+    campaigns = [value for (key, value) in event_data.items() if key.startswith('campaigns_')]
     formdata = {
         'Timestamp': str(datetime.datetime.utcnow()),
         'County': event_data.get('county'),
