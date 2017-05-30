@@ -27,6 +27,7 @@ def lambda_handler(event, context):
     sqs_url = os.environ['sqs_url']
     error_chance = float(os.environ['error_chance'])
     service = sheets_common.make_service(creds)
+    campaigns = [value for (key, value) in event.items() if key.startswith('campaigns_')]
     
     # Assemble form data
     event_data = event.get('data', {})
@@ -39,7 +40,7 @@ def lambda_handler(event, context):
         'Email': event_data.get('email'),
         'Primary Zip': event_data.get('zip_code'),
         'Practice Status': event_data.get('practice_status'),
-        'Campaigns': event_data.get('campaigns'),
+        'Campaigns': ', '.join(sorted(campaigns)),
         'Coordinating': event_data.get('coordinating'),
         }
     
