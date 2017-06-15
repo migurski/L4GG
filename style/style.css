@@ -106,4 +106,13 @@ form p input[type=submit]
         width: 45rem;
         margin: 2rem auto;
     }
+    .thank-you
+    {
+        margin-top: 10%;
+        line-height: 24px;
+    }
+    .thank-you p
+    {
+        margin-bottom: 24px;
+    }
 }
